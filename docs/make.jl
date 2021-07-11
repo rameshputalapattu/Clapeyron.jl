@@ -4,8 +4,9 @@ using Documenter,Clapeyron
 makedocs(sitename = "Clapeyron.jl",
 format = Documenter.HTML(
     # Use clean URLs, unless built as a "local" build
-    canonical = "https://juliadocs.github.io/Clapeyron.jl/dev/",
+    canonical = "https://ypaul21.github.io/Clapeyron.jl/",
     assets = ["assets/logo.ico"],
+    repo="github.com/ypaul21/Clapeyron.jl"
 ),
     authors = "Pierre J. Walker, Hon Wa Yew and Andrés Riedemann.",
     pages = [
