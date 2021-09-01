@@ -1,9 +1,9 @@
 #just a function, no struct
-function SRK(components::Vector{String}; idealmodel=BasicIdeal,
+function PSRK(components::Vector{String}; idealmodel=BasicIdeal,
     alpha = SoaveAlpha,
-    mixing = vdW1fRule,
-    activity = nothing,
-    translation=NoTranslation,
+    mixing = PSRKRule,
+    activity = UNIFAC,
+    translation=PenelouxTranslation,
     userlocations=String[], 
     ideal_userlocations=String[],
     alpha_userlocations = String[],
@@ -25,4 +25,4 @@ function SRK(components::Vector{String}; idealmodel=BasicIdeal,
      translation_userlocations = translation_userlocations,
      verbose = verbose)
 end
-export SRK
+export PSRK

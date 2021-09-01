@@ -18,22 +18,7 @@ struct UNIFAC{c<:EoSModel} <: UNIFACModel
     references::Array{String,1}
 end
 
-has_sites(::Type{<:UNIFACModel}) = false
-has_groups(::Type{<:UNIFACModel}) = true
-built_by_macro(::Type{<:UNIFACModel}) = false
-
-function Base.show(io::IO, mime::MIME"text/plain", model::UNIFAC)
-    return eosshow(io, mime, model)
-end
-
-function Base.show(io::IO, model::UNIFAC)
-    return eosshow(io, model)
-end
-
-Base.length(model::UNIFAC) = Base.length(model.icomponents)
-
-molecular_weight(model::UNIFAC,z=SA[1.0]) = group_molecular_weight(mw(model),z)
-
+@registermodel UNIFAC
 export UNIFAC
 
 function UNIFAC(components; puremodel=PR,
@@ -49,7 +34,7 @@ function UNIFAC(components; puremodel=PR,
     Q  = params["Q"]
     icomponents = 1:length(components)
     
-    init_puremodel = [puremodel([components[i]]) for i in icomponents]
+    init_puremodel = [puremodel([groups.components[i]]) for i in icomponents]
     packagedparams = UNIFACParam(A,B,C,R,Q)
     references = String[]
     model = UNIFAC(components,icomponents,groups,packagedparams,init_puremodel,1e-12,references)
@@ -76,6 +61,23 @@ function lnγ_comb(model::UNIFACModel,V,T,z)
     θ = q/sum(x[i]*q[i] for i ∈ @comps)
     lnγ_comb = @. log(Φ_p)+(1-Φ_p)-5*q*(log(Φ/θ)+(1-Φ/θ))
     return lnγ_comb
+end
+
+function lnγ_SG(model::UNIFACModel,V,T,z)
+    Q = model.params.Q.values
+    R = model.params.R.values
+
+    v  = model.groups.n_flattenedgroups
+
+    x = z ./ sum(z)
+
+    r =sum(v[:][k]*R[k] for k in @groups)
+    q =sum(v[:][k]*Q[k] for k in @groups)
+
+    Φ = r/sum(x[i]*r[i] for i ∈ @comps)
+    θ = q/sum(x[i]*q[i] for i ∈ @comps)
+    lnγ_SG = @. -5*q*(log(Φ/θ)+(1-Φ/θ))
+    return lnγ_SG
 end
 
 function lnγ_res(model::UNIFACModel,V,T,z)
@@ -119,5 +121,3 @@ function lnΓi(model::UNIFACModel,V,T,z)
     lnΓi_ = [Q.*(1 .-log.(sum(θ[i][m]*ψ[m,:] for m ∈ @groups)) .- sum(θ[i][m]*ψ[:,m]./sum(θ[i][n]*ψ[n,m] for n ∈ @groups) for m ∈ @groups)) for i ∈ @comps]
     return lnΓi_
 end
-
-is_splittable(::UNIFAC) = true
