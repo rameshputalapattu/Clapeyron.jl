@@ -26,7 +26,7 @@ function x0_bubble_pressure(model::EoSModel,T,x)
     #P_B = RT/v(1+B/v)
     #P_B(2B) = -RT/2B(1-B/2B)
     #P_B(2B) = -0.25*RT/B
-    sat = [if !replaceP[i] sat_pure(pure[i],T) else sat_nan end for i in 1:length(pure)]
+    sat = [if !replaceP[i] saturation_pressure(pure[i],T) else sat_nan end for i in 1:length(pure)]
     
     P_sat = [tup[1] for tup in sat]
     V_l_sat = [tup[2] for tup in sat]
@@ -80,7 +80,7 @@ function bubble_pressure(model::EoSModel, T, x; v0 =nothing)
     len = length(v0[1:end-1])
     #xcache = zeros(eltype(x0),len)
     Fcache = zeros(eltype(v0[1:end-1]),len)
-    f! = (F,z) -> Obj_bubble_pressure(model, F, T, exp10(z[1]), exp10(z[2]), x,z[3:end],ts,pmix)
+    f!(F,z) = Obj_bubble_pressure(model, F, T, exp10(z[1]), exp10(z[2]), x,z[3:end],ts,pmix)
     r  =Solvers.nlsolve(f!,v0[1:end-1],LineSearch(Newton()))
     sol = Solvers.x_sol(r)
     v_l = exp10(sol[1])
@@ -103,6 +103,33 @@ function Obj_bubble_pressure(model::EoSModel, F, T, v_l, v_v, x, y,ts,ps)
     return F
 end
 
+function bubble_temperature(model,p,x;T0=nothing)
+    f(z) = Obj_bubble_temperature(model,z,p,x)
+    if T0===nothing 
+        pure = split_model(model)
+        sat = saturation_temperature.(pure,p)
+        Ti   = zero(x)
+        for i ∈ 1:length(x)
+            if isnan(sat[i][1])
+                Tc,pc,vc = crit_pure(pure[i])
+                g(x) = p-pressure(pure[i],vc,x,[1.])
+                Ti[i] = Roots.find_zero(g,(Tc))
+            else
+                Ti[i] = sat[i][1]
+            end
+        end
+        T = Roots.find_zero(f,(minimum(Ti)*0.9,maximum(Ti)*1.1))
+    else
+        T = Roots.find_zero(f,T0)
+    end
+    p,v_l,v_v,y = bubble_pressure(model,T,x)
+    return T,v_l,v_v,y
+end
+
+function Obj_bubble_temperature(model,T,p,x)
+    p̃,v_l,v_v,y = bubble_pressure(model,T,x)
+    return p̃-p
+end
     #j! = (J,z) -> Jac_bubble_pressure(model, J, T, exp10(z[1]), exp10(z[2]), x[i,:], z[3:end])
     #=
     _y0 = collect(FractionVector(v0[3:end]))

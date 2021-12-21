@@ -1,11 +1,10 @@
 """
-    rr_vle_vapor_fraction(K,z)
+    rr_vle_vapor_fraction(K,z,α = NaN)
 
 Given a vector of K values and a vector of compositions, calculates the vapor fraction `β`.
 the algorithm is a modification of _(1)_ , with safeguards for extreme cases.
 
 If the algorithm fails to converge, returns `NaN`. if it converges to a value `β ∉ [0,1]`, returns `-Inf` or `Inf`, depending on the case.
-
 
 1. Vassilis Gaganis, "Solution of the Rachford Rice equation using perturbation analysis", Fluid Phase Equilibria, Volume 536,2021,112981
 """
@@ -79,10 +78,10 @@ function rr_vle_vapor_fraction(K,z)
     b4 = -(t1+t2)/M1
     βaprox = (b0+b1+b2+b3+b4) #β(ε=1)
     βsol1 =  Solvers.ad_newton(x->rr_flash_eval(K,z,x),βaprox)
-
+    βsol = βsol1
     #converged to -2.2e-16 or lower, practically 0
     if abs(βsol1) < eps(_1)
-        βsol1 =_0
+        βsol =_0
     end
     if 0 <= βsol1 <= 1 #converged as expected inside range [0,1]
         βsol = βsol1
@@ -104,7 +103,6 @@ function rr_vle_vapor_fraction(K,z)
         βsol = _0/_0
     end
     return βsol
-
 end
 function rr_find_strongest(K,z)
     _0 = zero(first(z)+first(K))
@@ -251,12 +249,16 @@ Each gas phase composition is calculated acording to:
     xvᵢ = kᵢzᵢ/(1+ β(kᵢ-1))
 """
 function rr_flash_vapor(k,z,β)
+    rr_flash_vapor!(similar(k),k,z,β)
+end
+
+function rr_flash_vapor!(y,k,z,β)
     function f(ki,zi)
     _1 = one(ki) 
         return ki*zi/(_1+β*(ki-_1))
     end
-
-    return map(f,k,z)
+    y .= f.(k,z)
+    y
 end
 
 """
@@ -268,9 +270,14 @@ Each gas phase composition is calculated acording to:
     xlᵢ = zᵢ/(1+ β(kᵢ-1))
 """
 function rr_flash_liquid(k,z,β)
+    rr_flash_liquid!(similar(k),k,z,β)
+end
+
+function rr_flash_liquid!(x,k,z,β)
     function f(ki,zi)
         _1 = one(ki) 
         return zi/(_1+β*(ki-_1))
     end
-    return map(f,k,z)
+    x .= f.(k,z)
+    x
 end

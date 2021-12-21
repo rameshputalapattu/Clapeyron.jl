@@ -13,7 +13,7 @@ using Clapeyron, Test, Unitful
         @test Clapeyron.pressure(system, 5.907908736304141e-5, T) ≈ p rtol = 1e-6
         @test Clapeyron.entropy(system, p, T) ≈ -58.87118569239617 rtol = 1E-6
         @test Clapeyron.chemical_potential(system, p, T)[1] ≈ -18323.877542682934 rtol = 1E-6
-        @test Clapeyron.internal_energy(system, p, T) ≈ 2.9796670214913704e7 rtol = 1E-6
+        @test Clapeyron.internal_energy(system, p, T) ≈ -35882.22946560716 rtol = 1E-6
         @test Clapeyron.enthalpy(system, p, T) ≈ -35876.32155687084 rtol = 1E-6
         @test Clapeyron.gibbs_free_energy(system, p, T) ≈ -18323.87754268292 rtol = 1E-6
         @test Clapeyron.helmholtz_free_energy(system, p, T) ≈ -18329.785451419295 rtol = 1E-6
@@ -24,11 +24,12 @@ using Clapeyron, Test, Unitful
         @test Clapeyron.speed_of_sound(system, p, T) ≈ 1236.4846683094133 rtol = 1E-6 #requires that the model has Mr
         @test Clapeyron.isobaric_expansivity(system, p, T) ≈ -0.0010874255138433413 rtol = 1E-6
         @test Clapeyron.joule_thomson_coefficient(system, p, T) ≈ -6.007581864883784e-7 rtol = 1E-6
-        @test Clapeyron.second_virial_coefficient(system, T) ≈ -0.004883874325089262 rtol = 1E-6 #exact value calculated by using BigFloat
+        @test Clapeyron.second_virial_coefficient(system, T) ≈ -0.004919678119638886  rtol = 1E-6 #exact value calculated by using BigFloat
         @test Clapeyron.inversion_temperature(system, 1.1e8) ≈ 824.4137805298458 rtol = 1E-6
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 7972.550405922014 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 7972.550405922014 rtol = 1E-6
+        @test Clapeyron.saturation_temperature(system, p)[1] ≈ 351.32529505096164 rtol = 1E-6
         @test Clapeyron.enthalpy_vap(system, T) ≈ 41712.78521121877 rtol = 1E-6
         @test Clapeyron.acentric_factor(system) ≈ 0.5730309964718605 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 533.1324329774004 rtol = 1E-6 
@@ -44,7 +45,7 @@ end
         @test Clapeyron.volume(system, p, T) ≈ 5.8990680856791996e-5 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 7933.046853495474 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 7933.046853495474 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 533.4350720160273 rtol = 1E-6 
     end
 end
@@ -57,7 +58,7 @@ end
         @test Clapeyron.volume(system, p, T) ≈ 0.00015924416586849443 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 167.8313793818096 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 167.8313793818096 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 618.8455740197799 rtol = 1E-6 
     end
 end
@@ -70,7 +71,7 @@ end
         @test Clapeyron.volume(system, p, T) ≈ 5.913050998953597e-5 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 7923.883649594267 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 7923.883649594267 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 539.218257256262 rtol = 1E-6 
     end
 end
@@ -83,7 +84,7 @@ end
         @test Clapeyron.volume(system, p, T) ≈ 5.753982584153832e-5 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 7714.849872968086 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 7714.849872968086 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 522.7742692078155 rtol = 1E-6 
     end
 end
@@ -96,7 +97,7 @@ end
         @test Clapeyron.volume(system, p, T) ≈ 4.064466003321247e-5 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 16957.625653548406 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 16957.625653548406 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 524.1487001618932 rtol = 1E-6 
     end
 end
@@ -115,9 +116,10 @@ end
     system = PCSAFT(["methanol","cyclohexane"])
     p = 1e5
     T = 313.15
-    T2 = 443.15
     z = [0.5,0.5]
-    z_LLE = [0.27,0.73]
+    p2 = 2e6
+    T2 = 443.15
+    z2 = [0.27,0.73]
     @testset "Bulk properties" begin
         @test Clapeyron.volume(system, p, T, z) ≈ 7.779694485714412e-5 rtol = 1e-6 
         @test Clapeyron.speed_of_sound(system, p, T, z) ≈ 1087.0303138908864 rtol = 1E-6
@@ -127,10 +129,16 @@ end
     @testset "Equilibrium properties" begin
         @test Clapeyron.UCEP_mix(system)[1] ≈ 319.36877456397684 rtol = 1E-6
         @test Clapeyron.bubble_pressure(system,T,z)[1] ≈ 54532.249600937736 rtol = 1E-6
-        @test Clapeyron.LLE_pressure(system,T,z_LLE)[1] ≈ 737971.7522006684 rtol = 1E-6
+        @test Clapeyron.bubble_temperature(system,p2,z)[1] ≈ 435.80890506865 rtol = 1E-6
+        @test Clapeyron.dew_pressure(system,T2,z)[1] ≈ 1.6555486543884084e6 rtol = 1E-6
+        @test Clapeyron.dew_temperature(system,p2,z)[1] ≈ 453.0056727580934 rtol = 1E-6
+        @test Clapeyron.LLE_pressure(system,T,z2)[1] ≈ 737971.7522006684 rtol = 1E-6
+        @test Clapeyron.LLE_temperature(system,p,z2)[1] ≈ 312.9523684945214 rtol = 1E-6
         @test Clapeyron.azeotrope_pressure(system,T2)[1] ≈ 2.4435462800998255e6 rtol = 1E-6
+        @test Clapeyron.azeotrope_temperature(system,p)[1] ≈ 328.2431049077264 rtol = 1E-6
         @test Clapeyron.UCST_mix(system,T2)[1] ≈ 1.0211532467788119e9 rtol = 1E-6
-        @test Clapeyron.VLLE_mix(system, T)[1] ≈ 54504.079665621306 rtol = 1E-6
+        @test Clapeyron.VLLE_pressure(system, T)[1] ≈ 54504.079665621306 rtol = 1E-6
+        @test Clapeyron.VLLE_temperature(system, p)[1] ≈ 328.2478837563423 rtol = 1E-6
         @test Clapeyron.crit_mix(system,z)[1] ≈ 518.0004062881115 rtol = 1E-6
     end
 end
@@ -148,7 +156,7 @@ end
         @test Clapeyron.speed_of_sound(system, p, T) ≈ 800.288303407983 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 1.409820798879772e6 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 1.409820798879772e6 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 305.31999999999994 rtol = 1E-6 
     end
 end
@@ -178,7 +186,7 @@ end
     end
     @testset "VLE properties" begin
         @test Clapeyron.crit_pure(system)[1] ≈ 512.6399509413803 rtol = 1E-6
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 15525.980361987053 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 15525.980361987053 rtol = 1E-6
     end
 end
 
@@ -206,7 +214,7 @@ end
         @test Clapeyron.speed_of_sound(system, p, T) ≈ 1484.0034692716843 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 3184.83242429761 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 3184.83242429761 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 647.0960000000457 rtol = 1E-6 
     end
 end
@@ -244,7 +252,7 @@ end
         @test Clapeyron.speed_of_sound(system, p, T) ≈ 1496.699163371358 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 3169.9293390134403 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 3169.9293390134403 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 647.096 rtol = 1E-5 
     end
 end
@@ -259,7 +267,7 @@ end
         @test Clapeyron.speed_of_sound(system, p, T) ≈ 1166.6704395959607 rtol = 1e-6 
     end
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T)[1] ≈ 97424.11102152328 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 97424.11102152328 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 369.8900089509652 rtol = 1E-6 
     end
 end
@@ -276,19 +284,37 @@ end
 
     T_sat = 250.15
     @testset "VLE properties" begin
-        @test Clapeyron.sat_pure(system, T_sat)[1] ≈ 3.5120264571020138e6 rtol = 1E-6
+        @test Clapeyron.saturation_pressure(system, T_sat)[1] ≈ 3.5120264571020138e6 rtol = 1E-6
         @test Clapeyron.crit_pure(system)[1] ≈ 270.27247485012657 rtol = 1E-6 
     end
+end
 
-    @testset "Split models" begin
-        model2 = PCSAFT(["water","ethanol"])
-        models2 = split_model(model2)
-        @test models2[1].components[1] == model2.components[1]
-        @test models2[2].components[1] == model2.components[2]
-        @test models2[1].icomponents == models2[2].icomponents == 1:1
+@testset "lattice methods" begin
+    p = 1e5
+    T = 298.15
+    T1 = 301.15
+    system = Clapeyron.SanchezLacombe(["carbon dioxide"])
+    @testset "Bulk properties" begin
+        @test Clapeyron.volume(system, p, T1) ≈ 0.02492944175392707 rtol = 1E-6
+        @test Clapeyron.speed_of_sound(system, p, T1) ≈ 307.7871016597499 rtol = 1E-6
+    end
+    @testset "VLE properties" begin
+        @test Clapeyron.saturation_pressure(system, T)[1] ≈ 6.468653945184592e6 rtol = 1E-6
+        @test Clapeyron.crit_pure(system)[1]  ≈ 304.21081254005446 rtol = 1E-6
+    end
+end
 
-        model2_unsplit = only(split_model(model2,[[1,2]]))
-        @test model2_unsplit.icomponents == model2.icomponents
-        @test model2_unsplit.components == model2.components
+@testset "Tp flash algorithms" begin
+    system = PCSAFT(["water","cyclohexane","carbon dioxide"])
+    T = 298.15
+    p = 1e5
+    z = [0.333, 0.333, 0.334]
+
+    @testset "RR Algorithm" begin
+        @test Clapeyron.tp_flash(system, p, T,z, RRTPFlash())[3] ≈ -6.520178250317485 rtol = 1e-6 
+    end
+
+    @testset "DE Algorithm" begin
+        @test Clapeyron.tp_flash(system, p, T,z, DETPFlash(numphases=3,population_size=20))[3] ≈ -6.73130492921276 rtol = 1e-6 
     end
 end

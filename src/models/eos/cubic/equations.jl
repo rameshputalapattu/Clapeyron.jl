@@ -1,3 +1,12 @@
+function ab_premixing(::Type{T},mixing,Tc,pc,kij) where T <: ABCubicModel
+    Ωa, Ωb = ab_consts(T)
+    _Tc = Tc.values
+    _pc = pc.values
+    a = epsilon_LorentzBerthelot(SingleParam(pc, @. Ωa*R̄^2*_Tc^2/_pc),kij)
+    b = sigma_LorentzBerthelot(SingleParam(pc, @. Ωb*R̄*_Tc/_pc))
+    return a,b
+end
+
 function cubic_ab(model::ABCubicModel,V,T,z=SA[1.0],n=sum(z))
     invn2 = (one(n)/n)^2
     a = model.params.a.values
@@ -30,35 +39,34 @@ function volume(model::ABCubicModel,p,T,z=SA[1.0];phase=:unknown,threaded=false)
     xx = z/sum(z)
     RTp = R̄*T/p
     _poly,c̄ = cubic_poly(model,p,T,z)
-
-    #sols = Solvers.poly3(_poly)
     sols = Solvers.roots3(_poly)
-    #xa = real.(sols) .* RTp
-    #@show xa
-    #with this, real sol is first
     function imagfilter(x)
         absx = abs(imag(x)) 
-        return absx <8*eps(typeof(absx))
+        return absx < 8*eps(typeof(absx))
     end
-    
-    isreal = map(imagfilter,sols)
-    _sols = sort(real.(sols)) .* RTp
-    
+    x1,x2,x3 = sols
+    sols = (x1,x2,x3)
+    xx = (x1,x2,x3)
+    isreal = imagfilter.(xx)
+    vvv = extrema(real.(xx))
+    zl,zg = vvv
+    vvl,vvg = RTp*zl,RTp*zg
     #@show _sols[isreal]
     #@show model.params.b.values
     #@show sum(isreal)
     if sum(isreal) == 3 #3 roots
-        sols = sort(real.(sols))
-        vg = last(sols)*RTp
-        _vl = first(sols)*RTp
+        vg = vvg
+        _vl = vvl
         vl = ifelse(_vl>lb_v,_vl,vg)
     elseif  sum(isreal) == 1
         i = findfirst(imagfilter,sols)
         vl = real(sols[i])*RTp
         vg = real(sols[i])*RTp
     elseif  sum(isreal) == 0
-        @show sols
-        error("weird")
+        #try to use the default volume solver
+        V0 = x0_volume(model,p,T,z;phase)
+        v = volume_compress(model,p,T;V0)
+        return v
     end
  
     #fp(_v) = pressure(model,_v,T,z) - p

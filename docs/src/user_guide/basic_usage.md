@@ -229,31 +229,38 @@ The functions for the physical properties that we currently support are as follo
   - For pure species:
 
     ```julia
-    (p_sat, V_l_sat, V_v_sat) = sat_pure(model, T)
+    (p_sat, V_l_sat, V_v_sat) = saturation_pressure(model, T)
+    (T_sat, V_l_sat, V_v_sat) = saturation_temperature(model, p)
     H_vap = enthalpy_vap(model, T)
     ```
 
   - For mixtures:
 
     ```julia
-    (p_sat, V_l_sat, V_v_sat, y) = bubble_pressure(model, T, x)
+    (p_bub, V_l_bub, V_v_bub, y) = bubble_pressure(model, T, x)
+    (T_bub, V_l_bub, V_v_bub, y) = bubble_temperature(model, p, x)
+    (p_dew, V_l_dew, V_v_dew, x) = dew_pressure(model, T, y)
+    (T_dew, V_l_dew, V_v_dew, x) = dew_temperature(model, p, y)
     (p_LLE, V_l_LLE, V_ll_LLE, xx) = LLE_pressure(model, T, x)
-    (p_az, V_l_sat, V_v_sat, x) = azeotrope_pressure(model, T)
-    (p_VLLE,V_l_sat, V_ll_sat, V_v_sat, x, xx, y) = VLLE_mix(model, T)
+    (T_LLE, V_l_LLE, V_ll_LLE, xx) = LLE_temperature(model, p, x)
+    (p_az, V_l_az, V_v_az, x) = azeotrope_pressure(model, T)
+    (T_az, V_l_az, V_v_az, x) = azeotrope_temperature(model, p)
+    (p_VLLE,V_l_sat, V_ll_sat, V_v_sat, x, xx, y) = VLLE_pressure(model, T)
+    (T_VLLE,V_l_sat, V_ll_sat, V_v_sat, x, xx, y) = VLLE_temperature(model, p)
     ```
 
   All the above arguments take in an optional argument for the initial guess:
 
   ```julia
-  (p_sat, V_l_sat, V_v_sat) = sat_pure(model, T;v0=log10.([V_l0,V_v0]))
+  (p_sat, V_l_sat, V_v_sat) = saturation_pressure(model, T;v0=log10.([V_l0,V_v0]))
   ```
 
   Although our calculations tend to be quite robust, this argument is generally useful for when one wants to obtain smooth VLE envelopes quicly when making figures. Here, you'd use a for loop where each iteration uses the previous' iteration value as an initial guess (except the first iteration). For example:
 
   ```julia
-  (p_sat, V_l_sat, V_v_sat) = sat_pure(model, T[1])
+  (p_sat, V_l_sat, V_v_sat) = saturation_pressure(model, T[1])
   for i in 2:length(T)
-    A = sat_pure(model,T[i];v0=log10.([V_l_sat[i-1],V_v_sat[i-1]]))
+    A = saturation_pressure(model,T[i];v0=log10.([V_l_sat[i-1],V_v_sat[i-1]]))
     append!(p_sat,A[1])
     append!(V_l_sat,A[2])
     append!(V_v_sat,A[3])

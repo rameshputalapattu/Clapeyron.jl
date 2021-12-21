@@ -28,6 +28,9 @@ This is useful in the case of models without any parameters, as those models are
 The Default is `is_splittable(model) = true`.
 """
 is_splittable(model) = true
+is_splittable(null::Union{Nothing,Missing}) = false
+is_splittable(::Number) = false
+is_splittable(::String) = false
 
 function split_model(param::SingleParam{T},
     splitter =split_model(1:length(param.components))) where T    
@@ -35,7 +38,7 @@ function split_model(param::SingleParam{T},
     return SingleParam(
     param.name,
     param.components[I],
-    param.values[I],
+    deepcopy(param.values[I]),#for SingleParam{Vector{X}}
     param.ismissingvalues[I],
     param.sourcecsvs,
     param.sources
@@ -71,7 +74,11 @@ end
 
 function split_model(param::AbstractVector,splitter = ([i] for i ∈ 1:length(param)))
     return [param[i] for i ∈ splitter]
-end 
+end
+
+function split_model(param::UnitRange{Int},splitter = ([i] for i ∈ 1:length(param)))
+    return [1:length(i) for i ∈ splitter]
+end
 
 function _split_model(assoc::CompressedAssocMatrix{T},I) where T
     len = length(assoc.values)
@@ -140,7 +147,7 @@ function split_model(param::SiteParam,
             param.i_sites[I],
             param.flattenedsites,
             param.n_flattenedsites[I],
-            1:length(param.flattenedsites),
+            param.i_flattenedsites[I],
         param.sourcecsvs)
     end
     return [generator(i) for i ∈ splitter]
@@ -164,7 +171,7 @@ function auto_split_model(Base.@nospecialize(model::EoSModel),subset=nothing)
             raw_splitter = model.groups.i_groups
             subset !== nothing && throw("using subsets is not supported with Group Contribution models")
         else
-            raw_splitter = split_model(1:length(model.components))
+            raw_splitter = split_model(Vector(1:length(model.components)))
         end
         if subset === nothing
             splitter = raw_splitter
@@ -177,71 +184,48 @@ function auto_split_model(Base.@nospecialize(model::EoSModel),subset=nothing)
         end
         
         len = length(splitter)
-
+        M = typeof(model)
+        allfieldnames = fieldnames(M)
         if hasfield(typeof(model),:groups) #TODO implement a splitter that accepts a subset
             allfields[:groups] = split_model(model.groups)
-        end
-        M = typeof(model)
-
-        len_comps = length(splitter)
-        if hasfield(typeof(model),:groups)
-            allfields[:components] = split_model(model.components)
-        else
-            allfields[:components] = split_model(model.components,splitter)
-        end
-        
-        if hasfield(typeof(model),:icomponents)
-            allfields[:icomponents] = [1:length(splitter[i]) for i ∈ 1:len_comps]
+            allfields[:components] = getfield.(allfields[:groups],:components)
+            for modelkey in allfieldnames
+                if !haskey(allfields,modelkey)
+                    modelx = getproperty(model,modelkey)
+                    if modelx isa Vector{<:EoSModel}
+                        allfields[modelkey] = split_model(modelx) #this is an api problem
+                    end
+                end
+            end
         end
         
-        #process all model fields
-        modelfields = filter(x->getproperty(model,x) isa EoSModel,fieldnames(M))
-        for modelkey ∈ modelfields
-            modelx = getproperty(model,modelkey)
-            if is_splittable(modelx)
-                allfields[modelkey]= split_model(modelx,subset)
-            else
-                allfields[modelkey] = fill(modelx,len_comps)
+        #add here any special keys, that behave as non_splittable values
+        for modelkey in [:references]
+            if modelkey in allfieldnames
+                if !haskey(allfields,modelkey)
+                    allfields[modelkey] = fill(getproperty(model,modelkey),len)
+                end
             end
         end
 
-        modelfields = filter(x->getproperty(model,x) isa Vector{<:EoSModel},fieldnames(M))
-        for modelkey ∈ modelfields
-            modelx = getproperty(model,modelkey)
-            allfields[modelkey] = [[tup] for tup ∈ modelx]
+        for modelkey ∈ allfieldnames
+            if !haskey(allfields,modelkey)
+                modelx = getproperty(model,modelkey)
+                if is_splittable(modelx)
+                    if modelx isa EoSModel
+                        allfields[modelkey]= split_model(modelx,subset)
+                    else
+                        allfields[modelkey]= split_model(modelx,splitter)
+                    end
+                else
+                    allfields[modelkey] = fill(modelx,len)
+                end
+            end
         end
-
-        only_paramfields = filter(x->getproperty(model,x) isa Union{SingleParam,PairParam,AssocParam},fieldnames(M))
-        for paramkey ∈ only_paramfields
-            modelx = getproperty(model,paramkey)
-            allfields[paramkey] = split_model(modelx,splitter)
-        end
-
-        #process all empty (Missing,Nothing) fields
-        emptyfields = filter(x->getproperty(model,x) isa Union{Nothing,Missing},fieldnames(M))
-
-        for emptykey ∈ emptyfields
-             allfields[emptykey] = fill(model.emptykey,len_comps)
-        end
-    
-        if hasfield(typeof(model),:params)
-            allfields[:params] = split_model(model.params,splitter)
-        end
-
-        if hasfield(typeof(model),:references)
-            allfields[:references] = fill(model.references,len_comps)
-        end
-
-        if hasfield(typeof(model),:absolutetolerance)
-            allfields[:absolutetolerance] = fill(model.absolutetolerance,len_comps)
-        end
-        if hasfield(typeof(model),:sites)
-            allfields[:sites] = split_model(model.sites,splitter)
-        end
-
 
         return [M((allfields[k][i] for k ∈ fieldnames(M))...) for i ∈ 1:len]
     catch e
+        M = typeof(model)
         @error "$M cannot be splitted"
         rethrow(e)
     end

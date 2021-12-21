@@ -5,7 +5,7 @@ using NLSolvers,Roots
 using PositiveFactorizations
 using DiffResults, ForwardDiff
 using StaticArrays
-import NaNMath
+
     function cholesky_linsolve(d,B,∇f)
         cholesky!(Positive, B)
         Bchol = Cholesky(B,'L',0)
@@ -54,7 +54,7 @@ import NaNMath
         #B   =  E12 - 3*E2                 # = s1 s2
         # quadratic equation: z^2 - Az + B^3=0  where roots are equal to s1^3 and s2^3
         Δ2 = det_22(A,A,4*B*B,B)
-        Δ = sqrt(Δ2)
+        Δ = Base.sqrt(Δ2)
         #Δ = (A*A - 4*B*B*B)^0.5
         if real(conj(A)*Δ)>=0 # scalar product to decide the sign yielding bigger magnitude
             s1 = exp(log(0.5 * (A + Δ)) * third)
@@ -103,19 +103,9 @@ import NaNMath
         return res.info.minimizer
     end
 
-    @inline log(x::Number) = Base.log(x)
-    @inline log(x::Complex) = Base.log(x)
-    @inline log(x::Real) = ifelse(x>=zero(x),Base.log(x),zero(x)/zero(x))
-    @inline log(x::Float64) = NaNMath.log(x)
-    @inline log(x::Float32) = NaNMath.log(x)
-    @inline log(x::Int8) = NaNMath.log(float(x))
-    @inline log(x::Int16) = NaNMath.log(float(x))
-    @inline log(x::Int32) = NaNMath.log(float(x))
-    @inline log(x::Int64) = NaNMath.log(float(x))
-    
-    include("ADNewton.jl")
+    include("nanmath.jl")
     include("nlsolve.jl")
     include("fixpoint/fixpoint.jl")
+    include("fixpoint/ADNewton.jl")
     include("optimize.jl")
-
 end # module

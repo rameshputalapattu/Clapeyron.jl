@@ -191,7 +191,7 @@ function PairParam(x::SingleParam,name::String=x.name)
     diagvalues = view(_values, diagind(_values))
     return PairParam(name, x.components, _values,diagvalues,_ismissingvalues,x.sourcecsvs, x.sources)
 end
-
+#=
 function PairParam(x::PairParam, v::Matrix,name::String=x.name)
     return PairParam(name, x.components,deepcopy(v), x.sourcecsvs, x.sources)
 end
@@ -202,7 +202,7 @@ end
 function PairParam(x::SingleParam, v::Matrix,name::String=x.name)
     return PairParam(x.name, x.components, deepcopy(v),x.sourcecsvs, x.sources)
 end
-
+=#
 #barebones constructor by list of pairs.
 
 
@@ -237,6 +237,7 @@ function AssocParam(name::String,components::Vector{String},values::Array{Array{
     return AssocParam(name,components,_values,allcomponentsites,sourcecsvs,sources)
 end
 
+#=
 function AssocParam(x::AssocParam{T}) where T
     return AssocParam{T}(x.name,x.components, deepcopy(x.values), x.sites, x.sourcecsvs, x.sources)
 end
@@ -254,7 +255,7 @@ function AssocParam{T}(name::String,components::Vector{String}) where T
     String[],
     String[])
 end
-
+=#
 function Base.show(io::IO,mime::MIME"text/plain",param::AssocParam{T}) where T
     print(io,"AssocParam{",string(T),"}")
     print(io,param.components)
@@ -263,11 +264,17 @@ function Base.show(io::IO,mime::MIME"text/plain",param::AssocParam{T}) where T
     vals = param.values
     sitenames = param.sites
     for (idx,(i,j),(a,b)) in indices(vals)
-        print(io,"(\"",comps[i],"\", \"",sitenames[i][a],"\")")
+        try
+        s1 = sitenames[i][a]
+        s2 = sitenames[j][b]
+        print(io,"(\"",comps[i],"\", \"",s1,"\")")
         print(io," >=< ")
-        print(io,"(\"",comps[j],"\", \"",sitenames[j][b],"\")")
+        print(io,"(\"",comps[j],"\", \"",s2,"\")")
         print(io,": ")
         println(io,vals.values[idx])
+        catch
+        println("error at i = $i, j = $j a = $a, b = $b")
+        end
     end
 end
 
@@ -498,7 +505,7 @@ struct SiteParam <: ClapeyronParam
     i_sites::Array{Array{Int,1},1}
     flattenedsites::Array{String,1}
     n_flattenedsites::Array{Array{Int,1},1}
-    i_flattenedsites::UnitRange{Int}
+    i_flattenedsites::Array{Array{Int,1},1}
     sourcecsvs::Array{String,1}
 end
 
@@ -549,7 +556,7 @@ function SiteParam(pairs::Dict{String,SingleParam{Int}},allcomponentsites)
     arbitraryparam = first(values(pairs))
     components = arbitraryparam.components
     sites = allcomponentsites
-    
+    ncomps = length(components)
     sourcecsvs = String[]
     for x in values(pairs)
         vcat(sourcecsvs,x.sourcecsvs)  
@@ -557,15 +564,20 @@ function SiteParam(pairs::Dict{String,SingleParam{Int}},allcomponentsites)
     if length(sourcecsvs) >0
         unique!(sourcecsvs)
     end
-    n_sites = [[pairs[sites[i][j]].values[i] for j ∈ 1:length(sites[i])] for i ∈ 1:length(components)]  # or groupsites
+    n_sites = [[pairs[sites[i][j]].values[i] for j ∈ 1:length(sites[i])] for i ∈ 1:ncomps]  # or groupsites
     length_sites = [length(componentsites) for componentsites ∈ sites]
-    i_sites = [1:length_sites[i] for i ∈ 1:length(components)]
+    i_sites = [1:length_sites[i] for i ∈ 1:ncomps]
     flattenedsites = unique!(reduce(vcat,sites,init = String[]))
     len_flattenedsites = length(flattenedsites)
-    i_flattenedsites = 1:len_flattenedsites
-    n_flattenedsites = [zeros(Int,len_flattenedsites) for _ ∈ 1:length(components)]
-    for i in length(components)
+    #i_flattenedsites = 1:len_flattenedsites
+    n_flattenedsites = [zeros(Int,len_flattenedsites) for _ ∈ 1:ncomps]
+    i_flattenedsites = [zeros(Int,len_flattenedsites) for _ ∈ 1:ncomps]
+    for i in 1:ncomps
         setindex!.(n_flattenedsites,n_sites,i_sites)
+        flatsites_i = i_flattenedsites[i]
+        for (aidx,a) in Base.pairs(i_sites[i])
+            flatsites_i[a] = aidx
+        end
     end
     return SiteParam(components, 
     sites, 
@@ -585,11 +597,17 @@ function SiteParam(input::PARSED_GROUP_VECTOR_TYPE,sourcecsvs::Vector{String}=St
     flattenedsites = unique!(reduce(vcat,sites,init = String[]))
     i_sites = [[findfirst(isequal(site), flattenedsites) for site ∈ componentsites] for componentsites ∈ sites]
     len_flattenedsites = length(flattenedsites)
-    i_flattenedsites = 1:len_flattenedsites
+    i_flattenedsites = [zeros(Int,len_flattenedsites) for _ ∈ 1:length(input)]
     n_flattenedsites = [zeros(Int,len_flattenedsites) for _ ∈ 1:length(input)]
-    for i in length(input)
+    for i in 1:length(input)
         setindex!.(n_flattenedsites,n_sites,i_sites)
+        flatsites_i = i_flattenedsites[i]
+        for (aidx,a) in Base.pairs(i_sites[i])
+            flatsites_i[a] = aidx
+        end
     end
+
+
 
     return SiteParam(components, 
     sites, 
@@ -610,9 +628,24 @@ function SiteParam(components::Vector{String})
     [Int[] for _ ∈ 1:n],
     String[],
     [Int[] for _ ∈ 1:n],
-    1:0,
+    [Int[] for _ ∈ 1:n],
     String[])
 end
+
+"""
+    AssocOptions(;rtol = 1e-12,atol = 1e-12,max_iters = 1000,dampingfactor = 0.5)
+
+Struct containing iteration parameters for the solver of association sites.
+
+"""
+@Base.kwdef struct AssocOptions <: ClapeyronParam
+    rtol::Float64 = 1e-12
+    atol::Float64 = 1e-12
+    max_iters::Int = 1000
+    dampingfactor::Float64 = 0.5
+end
+
+is_splittable(::AssocOptions) = false
 
 paramvals(param::ClapeyronParam) = param.values
 paramvals(x) = x

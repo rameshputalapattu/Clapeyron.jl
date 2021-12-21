@@ -11,8 +11,11 @@ end
 has_sites(::Type{<:AlphaModel})=false
 has_groups(::Type{<:AlphaModel})=false
 
+include("NoAlpha.jl")
 include("RKAlpha.jl")
 include("PRAlpha.jl")
+include("CPAAlpha.jl")
+include("sCPAAlpha.jl")
 include("PR78Alpha.jl")
 include("soave.jl")
 include("BM.jl")

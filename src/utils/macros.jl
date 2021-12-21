@@ -139,7 +139,7 @@ The Struct consists of the following fields:
 * sites: a [`SiteParam`](@ref)
 * params: the Struct paramstype that contains all parameters in the model
 * idealmodel: the IdealModel struct that determines which ideal model to use
-* absolutetolerance: the absolute tolerance for solvers; the default value is 1E-12
+* assoc_options: struct containing options for the association solver. see [AssocOptions](@ref)
 * references: reference for this EoS
 
 See the tutorial or browse the implementations to see how this is used.
@@ -153,13 +153,12 @@ macro newmodelgc(name, parent, paramstype)
         sites::SiteParam
         params::$paramstype
         idealmodel::T
-        absolutetolerance::Float64
+        assoc_options::AssocOptions
         references::Array{String,1}
     end
 
     has_sites(::Type{<:$name}) = true
     has_groups(::Type{<:$name}) = true
-    built_by_macro(::Type{<:$name}) = true
 
     function Base.show(io::IO, mime::MIME"text/plain", model::$name)
         return gc_eosshow(io, mime, model)
@@ -193,12 +192,11 @@ macro newmodel(name, parent, paramstype)
         sites::SiteParam
         params::$paramstype
         idealmodel::T
-        absolutetolerance::Float64
+        assoc_options::AssocOptions
         references::Array{String,1}
     end
     has_sites(::Type{<:$name}) = true
     has_groups(::Type{<:$name}) = false
-    built_by_macro(::Type{<:$name}) = true
    
     function Base.show(io::IO, mime::MIME"text/plain", model::$name)
         return eosshow(io, mime, model)
@@ -224,12 +222,10 @@ macro newmodelsimple(name, parent, paramstype)
         components::Array{String,1}
         icomponents::UnitRange{Int}
         params::$paramstype
-        absolutetolerance::Float64
         references::Array{String,1}
     end
     has_sites(::Type{<:$name}) = false
     has_groups(::Type{<:$name}) = false
-    built_by_macro(::Type{<:$name}) = true
 
     function Base.show(io::IO, mime::MIME"text/plain", model::$name)
         return eosshow(io, mime, model)
@@ -252,7 +248,7 @@ function (::Type{model})(params::EoSParam,
         idealmodel::IDEALTYPE = BasicIdeal;
         ideal_userlocations::Vector{String}=String[],
         references::Vector{String}=String[],
-        absolutetolerance::Float64 = 1e-12,
+        assoc_options::AssocOptions = AssocOptions(),
         verbose::Bool = false) where model <:EoSModel
 
         components = groups.components
@@ -261,7 +257,7 @@ function (::Type{model})(params::EoSParam,
         return model(components, icomponents,
         groups,
         sites,
-        params, init_idealmodel, absolutetolerance, references)
+        params, init_idealmodel, assoc_options, references)
 end
 
 function (::Type{model})(params::EoSParam,
@@ -269,11 +265,11 @@ function (::Type{model})(params::EoSParam,
         idealmodel::IDEALTYPE = BasicIdeal;
         ideal_userlocations::Vector{String}=String[],
         references::Vector{String}=String[],
-        absolutetolerance::Float64 = 1e-12,
+        assoc_options::AssocOptions = AssocOptions(),
         verbose::Bool = false) where model <:EoSModel
 
     sites = SiteParam(groups.components)
-    return model(params,groups,sites,idealmodel;ideal_userlocations,references,absolutetolerance,verbose)
+    return model(params,groups,sites,idealmodel;ideal_userlocations,references,assoc_options,verbose)
 end
 
 #non GC
@@ -282,7 +278,7 @@ function (::Type{model})(params::EoSParam,
         idealmodel::IDEALTYPE = BasicIdeal;
         ideal_userlocations::Vector{String}=String[],
         references::Vector{String}=String[],
-        absolutetolerance::Float64 = 1e-12,
+        assoc_options::AssocOptions = AssocOptions(),
         verbose::Bool = false) where model <:EoSModel
     
     components = sites.components
@@ -290,7 +286,7 @@ function (::Type{model})(params::EoSParam,
 
     init_idealmodel = init_model(idealmodel,components,ideal_userlocations,verbose)
     return model(components, icomponents,
-    sites, params, init_idealmodel, absolutetolerance, references)
+    sites, params, init_idealmodel, assoc_options, references)
 
 end
 
@@ -299,16 +295,14 @@ function (::Type{model})(params::EoSParam,
         idealmodel::IDEALTYPE = BasicIdeal;
         ideal_userlocations::Vector{String}=String[],
         references::Vector{String}=String[],
-        absolutetolerance::Float64 = 1e-12,
+        assoc_options::AssocOptions = AssocOptions(),
         verbose::Bool = false) where model <:EoSModel
 
-    
-    
     if has_sites(model)
         arbparam = arbitraryparam(params)
         components = arbparam.components
         sites = SiteParam(components)
-        return model(params,sites,idealmodel;ideal_userlocations,references,absolutetolerance,verbose)
+        return model(params,sites,idealmodel;ideal_userlocations,references,assoc_options,verbose)
     end
     #With sites out of the way, this is a simplemodel, no need to initialize the ideal model
     #if there isnt any params, just put empty values.
@@ -320,8 +314,7 @@ function (::Type{model})(params::EoSParam,
         components = String[]
         icomponents =1:0
     end
-    return model(components,icomponents,params,absolutetolerance,references)
-
+    return model(components,icomponents,params,references)
 end
 
 function init_model(idealmodel::IdealModel,components,userlocations,verbose)
@@ -337,7 +330,13 @@ function init_model(idealmodel::Type{<:IdealModel},components,userlocations,verb
     $idealmodel""")
     return idealmodel(components;userlocations,verbose)
 end
+"""
+    @registermodel(model)
 
+given an existing model, composed of Clapeyron EoS models, ClapeyronParams or EoSParams, it will generate 
+the necessary traits to make the model compatible with Clapeyron routines.
+
+"""
 macro registermodel(model)
     _model = @eval $model
     _has_components = hasfield(_model,:components)
@@ -386,8 +385,6 @@ return quote
     function Base.show(io::IO, model::$model)
         return eosshow(io, model)
     end
-
-    built_by_macro(::Type{<:$model}) = false
     
     $_length
 

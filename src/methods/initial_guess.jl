@@ -78,7 +78,7 @@ end
 
 function x0_volume_liquid(model::SAFTgammaMieModel,T,z)
     v_lb = lb_volume(model,z)
-    return v_lb*1.5
+    return v_lb*2.0
 end
 """
     x0_volume_gas(model,p,T,z)
@@ -437,13 +437,13 @@ On any EoS based on Critical parameters (Cubic or Empiric EoS), the temperature 
 
 On SAFT or other molecular EoS, the temperature scaling factor is chosen to be a function of the potential depth ϵ.
 
-Used as scaling factors in [`sat_pure`](@ref) and as input for solving [`crit_pure`](@ref)
+Used as scaling factors in [`saturation_pressure`](@ref) and as input for solving [`crit_pure`](@ref)
 """
 function T_scale end
 
 function T_scale(model::SAFTModel,z=SA[1.0])
     ϵ = model.params.epsilon.diagvalues
-    return prod(ϵ)^(1/length(ϵ))
+    return prod(ϵ[i]^z[i] for i in 1:length(z))^(1/sum(z))
 end
 
 function T_scale(model::SAFTgammaMieModel,z=SA[1.0])
@@ -453,7 +453,7 @@ end
 
 function T_scale(model::LJSAFTModel,z=SA[1.0])
     T̃ = model.params.T_tilde.diagvalues
-    return prod(T̃)^(1/length(T̃))
+    return prod(T̃[i]^z[i] for i in 1:length(z))^(1/sum(z))
 end
 
 #dont use αa, just a, to avoid temperature dependence
@@ -503,7 +503,7 @@ chosen to be a function of the critical pressure.
 On SAFT or other molecular EoS, the temperature    
 scaling factor is chosen to a function of ∑(zᵢ*ϵᵢ*(σᵢᵢ)³)    
 
-Used as scaling factors in [`sat_pure`](@ref) and as input for solving [`crit_pure`](@ref)
+Used as scaling factors in [`saturation_pressure`](@ref) and as input for solving [`crit_pure`](@ref)
 
 """
 function p_scale(model::SAFTModel,z=SA[1.0])

@@ -46,8 +46,13 @@ using Clapeyron, Test
     @testset "CPA" begin
         system = CPA(["ethanol","benzene"])
         z = [0.5, 0.5]
-        @test Clapeyron.a_SRK(system, V, T, z) ≈ 4.510022402195623 rtol = 1e-6
         @test Clapeyron.a_assoc(system, V, T, z) ≈ -1.1575210505284332 rtol = 1e-6
+    end
+
+    @testset "sCPA" begin
+        system = sCPA(["water","carbon dioxide"])
+        z = [0.5, 0.5]
+        @test Clapeyron.a_assoc(system, V, T, z) ≈ -1.957518287413705 rtol = 1e-6
     end
 
     @testset "SAFTVRSW" begin
@@ -137,7 +142,7 @@ end
 
         @testset "PSRK" begin
             system = PSRK(["ethane","undecane"])
-            @test Clapeyron.a_res(system, V, T, z) ≈ -1.1994085074805483 rtol = 1e-6
+            @test Clapeyron.a_res(system, V, T, z) ≈ -1.2265133881057408 rtol = 1e-6
         end
 
         @testset "RK w/ BMAlpha" begin
@@ -276,6 +281,11 @@ end
         @test Clapeyron.activity_coefficient(system,p,T,z)[1] ≈ 1.5322232657797463 rtol = 1e-6
     end
 
+    @testset "ogUNIFAC" begin
+        system = ogUNIFAC(["methanol","benzene"])
+        @test Clapeyron.activity_coefficient(system,p,T,z)[1] ≈ 1.5133696314734384 rtol = 1e-6
+    end
+
     @testset "COSMOSAC02" begin
         system = COSMOSAC02(["water","ethanol"])
         @test Clapeyron.activity_coefficient(system,p,T,z)[1] ≈ 1.3871817962565904 rtol = 1e-6
@@ -365,4 +375,12 @@ end
         system = SPUNG(["ethane"],PropaneRef(),PCSAFT(["ethane"]),PCSAFT(["propane"]))
         @test Clapeyron.shape_factors(system, V, T, z)[1] ≈ 1.3499576779924594 rtol = 1e-6
     end
+end
+
+@testset "lattice models" begin
+    T = 298.15
+    V = 1e-4
+    z = [1.]
+    system = Clapeyron.SanchezLacombe(["carbon dioxide"])
+    @test Clapeyron.a_res(system, V, T, z) ≈ -0.9511044462267396 rtol = 1e-6
 end
