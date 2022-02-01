@@ -126,8 +126,43 @@ function mass_density(model::EoSModel,p,T,z=SA[1.0];phase = :unknown,threaded=tr
     return molar_weight/V
 end
 
+"""
+    mixing(model::EoSModel, p, T, z=SA[1.], property; phase = :unknown,threaded=true)
+
+Calculates the mixing function for a specified property as:
+
+```julia
+f_mix = f(p,T,z)-z*f_pure(p,T)
+```
+the keywords `phase` and `threaded` are passed to the [volume solver](@ref Clapeyron.volume).
+"""
+function mixing(model::EoSModel,p,T,z,property;phase = :unknown,threaded=true)
+    pure = split_model(model)
+    pure_prop = property.(pure,p,T;phase=phase, threaded=threaded)
+    mix_prop  = property(model,p,T,z;phase=phase, threaded=threaded)
+    return mix_prop - dot(pure_prop,z)
+end
+
+excess(model::EoSModel,p,T,z,property) = mixing(model::EoSModel,p,T,z,property)
+
+function excess(model::EoSModel,p,T,z,::typeof(entropy))
+    pure = split_model(model)
+    s_pure = entropy_res.(pure,p,T)
+    s_mix = entropy_res(model,p,T,z)
+    return s_mix-Clapeyron.dot(s_pure,z)
+end
+
+function excess(model::EoSModel,p,T,z,::typeof(gibbs_free_energy))
+    pure = split_model(model)
+    g_pure = gibbs_free_energy.(pure,p,T)
+    g_mix = gibbs_free_energy(model,p,T,z)
+    x = z./sum(z)
+    return g_mix-Clapeyron.dot(g_pure,z)-Clapeyron.N_A*Clapeyron.k_B*T*Clapeyron.dot(z,log.(x))
+end
+
 export entropy, chemical_potential, internal_energy, enthalpy, gibbs_free_energy
 export helmholtz_free_energy, isochoric_heat_capacity, isobaric_heat_capacity
 export isothermal_compressibility, isentropic_compressibility, speed_of_sound
 export isobaric_expansivity, joule_thomson_coefficient, compressibility_factor, inversion_temperature
 export mass_density,molar_density, activity_coefficient, fugacity_coefficient, entropy_res
+export mixing, excess
