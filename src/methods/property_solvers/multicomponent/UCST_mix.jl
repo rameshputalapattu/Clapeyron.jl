@@ -1,5 +1,18 @@
+"""
+    UCST_mix(model::EoSModel,T;v0=x0_UCST_mix(model,T))
+
+Calculates the Upper critical solution point of a binary mixture at a given Temperature.
+
+returns:
+- UCEP Pressure [`Pa`]
+- liquid volume at UCEP Point [`m^3`]
+- gas volume at UCEP Point [`m^3`]
+- liquid molar composition at UCEP Point
+- gas molar composition at UCEP Point
+
+"""
 function UCST_mix(model::EoSModel,T;v0=nothing)
-    if v0 == nothing
+    if v0 === nothing
         v0 = x0_UCST_mix(model,T)
     end  
     f! = (F,x) -> Obj_UCST_mix(model, F, x[2], exp10(x[1]), T)
@@ -17,12 +30,8 @@ end
 
 function Obj_UCST_mix(model::EoSModel,F,z,V,T)
     z    = FractionVector(z)
-    f(x) = eos(model,V,T,x)
-    H(x) = ForwardDiff.hessian(f,x)/8.134/T
-    L(x) = det(H(x))
-    dL(x) = ForwardDiff.gradient(L,x)
-    M(x) = [H(x)[1:end-1,:];transpose(dL(x))]
-    F[1] = L(z)
-    F[2] = det(M(z))
+    L,detM = mixture_critical_constraint(model,V,T,z)
+    F[1] = L
+    F[2] = detM
     return F
 end
