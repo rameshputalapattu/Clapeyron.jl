@@ -3,8 +3,12 @@ A [Julia](http://julialang.org) package for the modelling of fluids using thermo
 
 The documentation is laid out as follows:
 
-- Background: Find more information about the origin and differences for each equation of state provided in this package, as well as some of the methods used to obtain the various thermodynamic properties
-- User guide: Find out how to use the equations of state provided in the package, how to use your own parameters, implement your own equation of state or algorithm.
+- **Background**: Find more information about the origin and differences for each equation of state provided in this package, as well as some of the methods used to obtain the various thermodynamic properties.
+- **Basic Usage**: Find out how to use the equations of state provided in the package.
+- **Customization**: how to use your own parameters, implement your own equation of state or algorithm.
+- **Notebook Examples**: A list of available notebooks showcasing different functionalities of the package.
+- **Available Models**: A list of all available Equations of State present in the package.
+- **API**: A list of all available methods.
 
 ### Authors
 
@@ -20,9 +24,30 @@ Clapeyron.jl is licensed under the [MIT license](https://github.com/ypaul21/Clap
 
 Clapeyron.jl is a registered package, it can be installed from the general registry by:
 
+
 ```julia
 pkg> add Clapeyron
 ```
+
+## Citing `Clapeyron.jl`
+
+If you are using Clapeyron for your research work, please cite the following:
+
+```
+@article{Clapeyron-2022,
+    title={Clapeyron.jl: An Extensible, Open-Source Fluid Thermodynamics Toolkit},
+    author={Pierre J. Walker, Hon-Wa Yew, and Andrés Riedemann},
+    journal={Ind. Eng. Chem. Res.},
+    volume={XX},
+    number={XX},
+    pages={XX--XX},
+    year={2022},
+    publisher={American Chemical Society},
+    doi={doi/10.1021/acs.iecr.2c00326},
+    url={https://pubs.acs.org/doi/10.1021/acs.iecr.2c00326}
+}
+```
+
 
 
 
