@@ -13,9 +13,21 @@ Pages = ["properties.md"]
 ```@index
 Pages = ["properties.md"]
 ```
+
+## Primitive functions
+
+Almost all models in Clapeyron have at least one of the following functions defined.
+
+```@docs
+Clapeyron.eos
+Clapeyron.eos_res
+Clapeyron.idealmodel
+Clapeyron.a_res
+```
+
 ## Automatic Differenciation functions
 
-All bulk properties in `Clapeyron` are calculated via a combination of these Automatic Differenciation Primitives. 
+All bulk properties in `Clapeyron` are calculated via a combination of these Automatic Differenciation Primitives over [`eos`](@ref) or [`eos_res`](@ref)
  
 ```@docs
 Clapeyron.∂f∂T
@@ -96,6 +108,12 @@ Clapeyron.mixing
 
 ```@docs
 Clapeyron.saturation_pressure
+Clapeyron.ChemPotVSaturation
+Clapeyron.ChemPotDensitySaturation
+Clapeyron.IsoFugacitySaturation
+Clapeyron.saturation_temperature
+Clapeyron.ClapeyronSaturation
+Clapeyron.AntoineSaturation
 Clapeyron.enthalpy_vap
 Clapeyron.crit_pure
 Clapeyron.acentric_factor
@@ -127,6 +145,7 @@ Clapeyron.gibbs_duhem
 Clapeyron.isstable
 Clapeyron.mechanical_stability
 Clapeyron.diffusive_stability
+Clapeyron.tpd
 ```
 
 ## TP Flash
@@ -136,6 +155,7 @@ Clapeyron.tp_flash
 Clapeyron.TPFlashMethod
 Clapeyron.DETPFlash
 Clapeyron.RRTPFlash
+Clapeyron.MichelsenTPFlash
 Clapeyron.numphases
 ```
 
@@ -150,6 +170,9 @@ Clapeyron.x0_volume_liquid
 Clapeyron.x0_volume_gas
 Clapeyron.volume_virial
 Clapeyron.x0_sat_pure
+Clapeyron.x0_psat
+Clapeyron.x0_saturation_temperature
+Clapeyron.antoine_coef
 Clapeyron.x0_crit_pure
 ```
 
